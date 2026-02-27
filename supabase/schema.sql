@@ -35,18 +35,22 @@ CREATE TABLE IF NOT EXISTS subscriptions (
 -- Row Level Security
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view their own subscriptions" ON subscriptions;
 CREATE POLICY "Users can view their own subscriptions"
   ON subscriptions FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert their own subscriptions" ON subscriptions;
 CREATE POLICY "Users can insert their own subscriptions"
   ON subscriptions FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can update their own subscriptions" ON subscriptions;
 CREATE POLICY "Users can update their own subscriptions"
   ON subscriptions FOR UPDATE
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can delete their own subscriptions" ON subscriptions;
 CREATE POLICY "Users can delete their own subscriptions"
   ON subscriptions FOR DELETE
   USING (auth.uid() = user_id);
@@ -60,15 +64,16 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS subscriptions_updated_at ON subscriptions;
 CREATE TRIGGER subscriptions_updated_at
   BEFORE UPDATE ON subscriptions
   FOR EACH ROW
   EXECUTE FUNCTION update_updated_at();
 
 -- Index for common queries
-CREATE INDEX idx_subscriptions_user_id ON subscriptions(user_id);
-CREATE INDEX idx_subscriptions_next_billing ON subscriptions(next_billing);
-CREATE INDEX idx_subscriptions_status ON subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_user_id ON subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_next_billing ON subscriptions(next_billing);
+CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status);
 
 -- City subscriptions table
 CREATE TABLE IF NOT EXISTS city_subscriptions (
