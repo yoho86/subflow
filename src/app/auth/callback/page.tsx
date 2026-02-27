@@ -13,28 +13,16 @@ export default function AuthCallbackPage() {
       }
     });
 
-    // Handle the OAuth code exchange via URL hash
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get("access_token");
-
-    if (!accessToken) {
-      // For PKCE flow, the code is in the query string
-      const searchParams = new URLSearchParams(window.location.search);
-      const code = searchParams.get("code");
-
-      if (code) {
-        supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-          if (error) {
-            window.location.href = "/login?error=auth";
-          } else {
-            window.location.href = "/";
-          }
-        });
-      } else {
-        // No token or code found, redirect to login
-        window.location.href = "/login?error=auth";
-      }
-    }
+    // Implicit flow: tokens are in the URL hash,
+    // createBrowserClient detects them automatically.
+    // If no session detected after a moment, redirect to login.
+    setTimeout(() => {
+      supabase.auth.getSession().then(({ data }) => {
+        if (!data.session) {
+          window.location.href = "/login?error=auth";
+        }
+      });
+    }, 2000);
   }, []);
 
   return (
