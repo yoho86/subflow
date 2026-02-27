@@ -24,8 +24,11 @@ export default function DashboardPage() {
   const { allItems: cityItems, loading: cityItemsLoading, error: cityItemsError } =
     useCityCostItems();
 
-  const loading = subscriptionsLoading || citiesLoading || cityItemsLoading;
-  const error = subscriptionsError || citiesError || cityItemsError;
+  const loading = subscriptionsLoading;
+  const error = subscriptionsError;
+  const cityLoading = citiesLoading || cityItemsLoading;
+  const cityError = citiesError || cityItemsError;
+  const cityDataAvailable = !cityLoading && !cityError;
   const defaultCurrency = getDefaultCurrency();
 
   const regularMonthly = subscriptions
@@ -35,14 +38,17 @@ export default function DashboardPage() {
       0
     );
 
-  const activeCities = cities.filter((city) => city.status === "active");
+  const effectiveCities = cityDataAvailable ? cities : [];
+  const effectiveCityItems = cityDataAvailable ? cityItems : [];
+
+  const activeCities = effectiveCities.filter((city) => city.status === "active");
   const activeCityIds = new Set(activeCities.map((city) => city.id));
 
   const cityTotalsByCityId: Record<string, number> = {};
   for (const city of activeCities) {
     cityTotalsByCityId[city.id] = 0;
   }
-  for (const item of cityItems) {
+  for (const item of effectiveCityItems) {
     if (item.status !== "active" || !activeCityIds.has(item.city_id)) continue;
     cityTotalsByCityId[item.city_id] =
       (cityTotalsByCityId[item.city_id] ?? 0) +
@@ -50,7 +56,7 @@ export default function DashboardPage() {
   }
 
   const cityMonthly = Object.values(cityTotalsByCityId).reduce((sum, value) => sum + value, 0);
-  const overallMonthly = regularMonthly + cityMonthly;
+  const overallMonthly = regularMonthly + (cityDataAvailable ? cityMonthly : 0);
   const overallYearly = overallMonthly * 12;
 
   return (
@@ -80,13 +86,26 @@ export default function DashboardPage() {
               overallMonthly={overallMonthly}
               overallYearly={overallYearly}
             />
-            <CityCostSummary
-              cities={cities}
-              cityMonthlyTotal={cityMonthly}
-              overallMonthlyTotal={overallMonthly}
-              cityTotalsByCityId={cityTotalsByCityId}
-              defaultCurrency={defaultCurrency}
-            />
+            {cityLoading ? (
+              <div className="rounded-2xl border bg-card p-5 text-sm text-muted-foreground">
+                城市成本加载中...
+              </div>
+            ) : cityError ? (
+              <div className="rounded-2xl border border-amber-300/60 bg-amber-50/60 p-5">
+                <p className="text-sm text-amber-800">
+                  城市模块暂不可用，已降级为仅统计常规订阅。请确认线上已执行最新数据库 schema。
+                </p>
+                <p className="text-xs text-amber-700 mt-1 break-all">{cityError}</p>
+              </div>
+            ) : (
+              <CityCostSummary
+                cities={effectiveCities}
+                cityMonthlyTotal={cityMonthly}
+                overallMonthlyTotal={overallMonthly}
+                cityTotalsByCityId={cityTotalsByCityId}
+                defaultCurrency={defaultCurrency}
+              />
+            )}
             <TrendChart subscriptions={subscriptions} />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
               <CategoryChart subscriptions={subscriptions} />
