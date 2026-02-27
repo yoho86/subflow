@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, X, RotateCcw } from "lucide-react";
+import { Plus, X, RotateCcw, Pencil, Save, Trash2 } from "lucide-react";
 
 const CURRENCIES = [
   { code: "CNY", label: "人民币 (¥)" },
@@ -45,6 +45,9 @@ export default function SettingsPage() {
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [newCatName, setNewCatName] = useState("");
   const [newCatColor, setNewCatColor] = useState(PRESET_COLORS[0]);
+  const [editingCategoryName, setEditingCategoryName] = useState<string | null>(null);
+  const [editingNameDraft, setEditingNameDraft] = useState("");
+  const [editingColorDraft, setEditingColorDraft] = useState(PRESET_COLORS[0]);
 
   useEffect(() => {
     const saved = localStorage.getItem("subflow_currency");
@@ -81,27 +84,46 @@ export default function SettingsPage() {
     const updated = categories.filter((c) => c.name !== name);
     setCategories(updated);
     saveCategories(updated);
+    if (editingCategoryName === name) {
+      cancelEditingCategory();
+    }
   }
 
-  function handleColorChange(name: string, color: string) {
-    const updated = categories.map((c) => (c.name === name ? { ...c, color } : c));
-    setCategories(updated);
-    saveCategories(updated);
+  function startEditingCategory(cat: CategoryItem) {
+    setEditingCategoryName(cat.name);
+    setEditingNameDraft(cat.name);
+    setEditingColorDraft(cat.color);
   }
 
-  function handleRenameCategory(oldName: string, nextNameRaw: string): boolean {
-    const nextName = nextNameRaw.trim();
-    if (!nextName) return false;
-    if (nextName === oldName) return true;
-    if (categories.some((c) => c.name === nextName)) return false;
+  function cancelEditingCategory() {
+    setEditingCategoryName(null);
+    setEditingNameDraft("");
+    setEditingColorDraft(PRESET_COLORS[0]);
+  }
+
+  async function saveEditingCategory() {
+    if (!editingCategoryName) return;
+    const nextName = editingNameDraft.trim();
+    if (!nextName) return;
+    if (
+      nextName !== editingCategoryName &&
+      categories.some((c) => c.name === nextName)
+    ) {
+      return;
+    }
 
     const updated = categories.map((c) =>
-      c.name === oldName ? { ...c, name: nextName } : c
+      c.name === editingCategoryName
+        ? { ...c, name: nextName, color: editingColorDraft }
+        : c
     );
     setCategories(updated);
     saveCategories(updated);
-    void syncCategoryNameToSubscriptions(oldName, nextName);
-    return true;
+
+    if (nextName !== editingCategoryName) {
+      await syncCategoryNameToSubscriptions(editingCategoryName, nextName);
+    }
+    cancelEditingCategory();
   }
 
   async function syncCategoryNameToSubscriptions(oldName: string, nextName: string) {
@@ -121,6 +143,7 @@ export default function SettingsPage() {
   function handleResetCategories() {
     setCategories([...DEFAULT_CATEGORIES]);
     saveCategories([...DEFAULT_CATEGORIES]);
+    cancelEditingCategory();
   }
 
   return (
@@ -194,43 +217,89 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                {categories.map((cat, index) => (
+                {categories.map((cat) => {
+                  const isEditing = editingCategoryName === cat.name;
+                  return (
                   <div
-                    key={`${cat.name}-${index}`}
+                    key={cat.name}
                     className="flex items-center gap-3 rounded-lg border px-3 py-2"
                   >
-                    <input
-                      type="color"
-                      value={cat.color}
-                      onChange={(e) => handleColorChange(cat.name, e.target.value)}
-                      className="h-6 w-6 rounded cursor-pointer border-0 p-0 bg-transparent"
-                    />
-                    <Input
-                      defaultValue={cat.name}
-                      className="h-8 flex-1"
-                      onBlur={(e) => {
-                        const ok = handleRenameCategory(cat.name, e.currentTarget.value);
-                        if (!ok) e.currentTarget.value = cat.name;
-                      }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          e.currentTarget.blur();
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveCategory(cat.name)}
-                      className="text-muted-foreground hover:text-destructive transition-colors p-1 rounded"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
+                    {isEditing ? (
+                      <>
+                        <input
+                          type="color"
+                          value={editingColorDraft}
+                          onChange={(e) => setEditingColorDraft(e.target.value)}
+                          className="h-6 w-6 rounded cursor-pointer border-0 p-0 bg-transparent"
+                        />
+                        <Input
+                          value={editingNameDraft}
+                          onChange={(e) => setEditingNameDraft(e.target.value)}
+                          className="h-8 flex-1"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              void saveEditingCategory();
+                            }
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-2"
+                          onClick={() => void saveEditingCategory()}
+                          disabled={!editingNameDraft.trim()}
+                        >
+                          <Save className="h-3.5 w-3.5 mr-1" />
+                          保存
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-muted-foreground"
+                          onClick={cancelEditingCategory}
+                        >
+                          <X className="h-3.5 w-3.5 mr-1" />
+                          取消
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <div
+                          className="h-6 w-6 rounded-full shrink-0 border"
+                          style={{ backgroundColor: cat.color }}
+                        />
+                        <span className="text-sm flex-1">{cat.name}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-muted-foreground"
+                          onClick={() => startEditingCategory(cat)}
+                        >
+                          <Pencil className="h-3.5 w-3.5 mr-1" />
+                          编辑
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 px-2 text-muted-foreground hover:text-destructive"
+                          onClick={() => handleRemoveCategory(cat.name)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5 mr-1" />
+                          删除
+                        </Button>
+                      </>
+                    )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
               <p className="text-xs text-muted-foreground">
-                支持直接编辑分类名称，按回车或失焦保存
+                点击编辑后修改，保存才会生效
               </p>
 
               <div className="flex items-center gap-2 pt-2 border-t">
