@@ -1,8 +1,8 @@
 "use client";
 
 import type { Subscription } from "@/lib/types";
-import { getMonthlyCost, formatCurrency, getDaysUntilBilling } from "@/lib/calculations";
-import { CATEGORY_COLORS, BILLING_CYCLE_LABELS, STATUS_LABELS } from "@/lib/constants";
+import { getMonthlyCostConverted, formatCurrency, getDaysUntilBilling } from "@/lib/calculations";
+import { getCategoryColor, BILLING_CYCLE_LABELS, STATUS_LABELS, getDefaultCurrency } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Pencil, Trash2 } from "lucide-react";
@@ -14,11 +14,10 @@ interface Props {
 }
 
 export function SubscriptionListItem({ subscription: sub, onEdit, onDelete }: Props) {
-  const monthly = getMonthlyCost(sub);
+  const defaultCurrency = getDefaultCurrency();
+  const monthly = getMonthlyCostConverted(sub, defaultCurrency);
   const daysUntil = getDaysUntilBilling(sub);
-  const categoryColor = sub.category
-    ? CATEGORY_COLORS[sub.category] ?? "#6B7280"
-    : "#6B7280";
+  const categoryColor = getCategoryColor(sub.category ?? "");
 
   return (
     <div
@@ -45,8 +44,8 @@ export function SubscriptionListItem({ subscription: sub, onEdit, onDelete }: Pr
         <p className="text-xs text-muted-foreground mt-0.5">
           {sub.category ?? "未分类"}
           {sub.type === "recurring" && sub.billing_cycle
-            ? ` · ${formatCurrency(sub.amount ?? 0)}/${BILLING_CYCLE_LABELS[sub.billing_cycle]}`
-            : ` · 买断 ${formatCurrency(sub.purchase_price ?? 0)}`}
+            ? ` · ${formatCurrency(sub.amount ?? 0, sub.currency)}/${BILLING_CYCLE_LABELS[sub.billing_cycle]}`
+            : ` · 买断 ${formatCurrency(sub.purchase_price ?? 0, sub.currency)}`}
           {daysUntil !== null && (
             <span>
               {" · "}
@@ -58,7 +57,7 @@ export function SubscriptionListItem({ subscription: sub, onEdit, onDelete }: Pr
 
       <div className="text-right shrink-0">
         <span className="font-mono text-lg font-semibold tracking-tighter">
-          {formatCurrency(monthly)}
+          {formatCurrency(monthly, defaultCurrency)}
         </span>
         <span className="text-xs text-muted-foreground ml-0.5">/月</span>
       </div>

@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions";
 import { getMonthlyCost, getDaysUntilBilling } from "@/lib/calculations";
-import type { Subscription, SubscriptionInsert, Category, SubscriptionStatus } from "@/lib/types";
+import type { Subscription, SubscriptionInsert, SubscriptionStatus } from "@/lib/types";
 import { SubscriptionCard } from "@/components/subscriptions/subscription-card";
 import { SubscriptionListItem } from "@/components/subscriptions/subscription-list-item";
 import { SubscriptionForm } from "@/components/subscriptions/subscription-form";
@@ -31,7 +31,7 @@ export default function SubscriptionsPage() {
   const [editing, setEditing] = useState<Subscription | null>(null);
 
   const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<Category | "all">("all");
+  const [categoryFilter, setCategoryFilter] = useState<string | "all">("all");
   const [statusFilter, setStatusFilter] = useState<SubscriptionStatus | "all">("all");
   const [typeFilter, setTypeFilter] = useState<"recurring" | "lifetime" | "all">("all");
   const [sortKey, setSortKey] = useState<SortKey>("monthly_cost");

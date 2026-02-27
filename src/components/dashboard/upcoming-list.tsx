@@ -2,13 +2,14 @@
 
 import type { Subscription } from "@/lib/types";
 import { formatCurrency, getDaysUntilBilling } from "@/lib/calculations";
-import { CATEGORY_COLORS } from "@/lib/constants";
+import { getCategoryColor, getDefaultCurrency, convertCurrency } from "@/lib/constants";
 
 interface Props {
   subscriptions: Subscription[];
 }
 
 export function UpcomingList({ subscriptions }: Props) {
+  const defaultCurrency = getDefaultCurrency();
   const upcoming = subscriptions
     .filter((s) => s.status === "active" && s.type === "recurring" && s.next_billing)
     .map((s) => ({ ...s, daysUntil: getDaysUntilBilling(s) ?? 999 }))
@@ -30,9 +31,7 @@ export function UpcomingList({ subscriptions }: Props) {
       ) : (
         <div className="space-y-3">
           {upcoming.map((sub) => {
-            const categoryColor = sub.category
-              ? CATEGORY_COLORS[sub.category] ?? "#6B7280"
-              : "#6B7280";
+            const categoryColor = getCategoryColor(sub.category ?? "");
 
             return (
               <div
@@ -53,7 +52,7 @@ export function UpcomingList({ subscriptions }: Props) {
                 </div>
                 <div className="text-right shrink-0">
                   <p className="font-mono text-sm font-medium">
-                    {formatCurrency(sub.amount ?? 0)}
+                    {formatCurrency(convertCurrency(sub.amount ?? 0, sub.currency || "CNY", defaultCurrency), defaultCurrency)}
                   </p>
                   <p className="text-[10px] text-muted-foreground">
                     {sub.daysUntil === 0

@@ -1,8 +1,8 @@
 "use client";
 
 import type { Subscription } from "@/lib/types";
-import { getMonthlyCost, formatCurrency, getDaysUntilBilling } from "@/lib/calculations";
-import { CATEGORY_COLORS, BILLING_CYCLE_LABELS, STATUS_LABELS } from "@/lib/constants";
+import { getMonthlyCostConverted, formatCurrency, getDaysUntilBilling } from "@/lib/calculations";
+import { getCategoryColor, BILLING_CYCLE_LABELS, STATUS_LABELS, getDefaultCurrency } from "@/lib/constants";
 import { Badge } from "@/components/ui/badge";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,11 +14,10 @@ interface Props {
 }
 
 export function SubscriptionCard({ subscription: sub, onEdit, onDelete }: Props) {
-  const monthly = getMonthlyCost(sub);
+  const defaultCurrency = getDefaultCurrency();
+  const monthly = getMonthlyCostConverted(sub, defaultCurrency);
   const daysUntil = getDaysUntilBilling(sub);
-  const categoryColor = sub.category
-    ? CATEGORY_COLORS[sub.category] ?? "#6B7280"
-    : "#6B7280";
+  const categoryColor = getCategoryColor(sub.category ?? "");
 
   return (
     <div
@@ -50,7 +49,7 @@ export function SubscriptionCard({ subscription: sub, onEdit, onDelete }: Props)
 
       <div className="flex items-baseline gap-1">
         <span className="font-mono text-2xl font-semibold tracking-tighter">
-          {formatCurrency(monthly)}
+          {formatCurrency(monthly, defaultCurrency)}
         </span>
         <span className="text-xs text-muted-foreground">/月</span>
       </div>
@@ -59,7 +58,7 @@ export function SubscriptionCard({ subscription: sub, onEdit, onDelete }: Props)
         {sub.type === "recurring" ? (
           <>
             <p>
-              {formatCurrency(sub.amount ?? 0)} /{" "}
+              {formatCurrency(sub.amount ?? 0, sub.currency)} /{" "}
               {sub.billing_cycle ? BILLING_CYCLE_LABELS[sub.billing_cycle] : "—"}
             </p>
             {daysUntil !== null && (
@@ -74,7 +73,7 @@ export function SubscriptionCard({ subscription: sub, onEdit, onDelete }: Props)
           </>
         ) : (
           <>
-            <p>买断 {formatCurrency(sub.purchase_price ?? 0)}</p>
+            <p>买断 {formatCurrency(sub.purchase_price ?? 0, sub.currency)}</p>
             <p>预期使用 {sub.expected_lifespan_months} 个月</p>
           </>
         )}

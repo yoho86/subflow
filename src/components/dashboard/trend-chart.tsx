@@ -2,6 +2,7 @@
 
 import type { Subscription } from "@/lib/types";
 import { getMonthlyTrendData, formatCurrency } from "@/lib/calculations";
+import { getDefaultCurrency } from "@/lib/constants";
 import {
   AreaChart,
   Area,
@@ -17,7 +18,8 @@ interface Props {
 }
 
 export function TrendChart({ subscriptions }: Props) {
-  const data = getMonthlyTrendData(subscriptions, 12);
+  const defaultCurrency = getDefaultCurrency();
+  const data = getMonthlyTrendData(subscriptions, 12, defaultCurrency);
 
   if (data.length === 0) {
     return (
@@ -62,11 +64,11 @@ export function TrendChart({ subscriptions }: Props) {
               tick={{ fontSize: 11, fill: "#999" }}
               axisLine={false}
               tickLine={false}
-              tickFormatter={(v) => `¥${v}`}
+              tickFormatter={(v) => formatCurrency(v, defaultCurrency)}
               width={55}
             />
             <Tooltip
-              formatter={(value) => [formatCurrency(Number(value)), "月度支出"]}
+              formatter={(value) => [formatCurrency(Number(value), defaultCurrency), "月度支出"]}
               contentStyle={{
                 borderRadius: "10px",
                 border: "1px solid rgba(0,0,0,0.06)",

@@ -2,7 +2,8 @@
 
 import { useCallback } from "react";
 import type { Subscription } from "@/lib/types";
-import { getMonthlyCost, formatCurrency, getDaysUntilBilling } from "@/lib/calculations";
+import { getMonthlyCostConverted, formatCurrency, getDaysUntilBilling } from "@/lib/calculations";
+import { getDefaultCurrency } from "@/lib/constants";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { StaggerContainer, StaggerItem } from "@/components/motion/stagger-children";
 import { DollarSign, TrendingUp, Layers, CalendarClock } from "lucide-react";
@@ -12,9 +13,10 @@ interface Props {
 }
 
 export function StatsCards({ subscriptions }: Props) {
+  const defaultCurrency = getDefaultCurrency();
   const active = subscriptions.filter((s) => s.status === "active");
 
-  const monthlyTotal = active.reduce((sum, s) => sum + getMonthlyCost(s), 0);
+  const monthlyTotal = active.reduce((sum, s) => sum + getMonthlyCostConverted(s, defaultCurrency), 0);
   const yearlyTotal = monthlyTotal * 12;
   const activeCount = active.length;
   const upcomingCount = active.filter((s) => {
@@ -22,7 +24,7 @@ export function StatsCards({ subscriptions }: Props) {
     return days !== null && days >= 0 && days <= 30;
   }).length;
 
-  const currencyFormatter = useCallback((v: number) => formatCurrency(v), []);
+  const currencyFormatter = useCallback((v: number) => formatCurrency(v, defaultCurrency), [defaultCurrency]);
   const intFormatter = useCallback((v: number) => String(Math.round(v)), []);
 
   const stats = [

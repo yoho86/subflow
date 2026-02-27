@@ -2,13 +2,14 @@
 
 import type { Subscription } from "@/lib/types";
 import { getBillingCalendarData, formatCurrency } from "@/lib/calculations";
-import { CATEGORY_COLORS } from "@/lib/constants";
+import { getCategoryColor, getDefaultCurrency, convertCurrency } from "@/lib/constants";
 
 interface Props {
   subscriptions: Subscription[];
 }
 
 export function BillingCalendar({ subscriptions }: Props) {
+  const defaultCurrency = getDefaultCurrency();
   const calendarData = getBillingCalendarData(subscriptions);
   const now = new Date();
   const today = now.getDate();
@@ -61,9 +62,7 @@ export function BillingCalendar({ subscriptions }: Props) {
               </div>
               <div className="flex-1 space-y-1.5 pb-1">
                 {daySubs.map((sub) => {
-                  const color = sub.category
-                    ? CATEGORY_COLORS[sub.category] ?? "#6B7280"
-                    : "#6B7280";
+                  const color = getCategoryColor(sub.category ?? "");
                   return (
                     <div
                       key={sub.id}
@@ -77,7 +76,7 @@ export function BillingCalendar({ subscriptions }: Props) {
                         <span className="text-sm">{sub.name}</span>
                       </div>
                       <span className="font-mono text-xs text-muted-foreground">
-                        {formatCurrency(sub.amount ?? 0)}
+                        {formatCurrency(convertCurrency(sub.amount ?? 0, sub.currency || "CNY", defaultCurrency), defaultCurrency)}
                       </span>
                     </div>
                   );

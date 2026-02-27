@@ -1,8 +1,8 @@
 "use client";
 
-import type { Subscription, Category } from "@/lib/types";
-import { getMonthlyCost, formatCurrency } from "@/lib/calculations";
-import { CATEGORY_COLORS } from "@/lib/constants";
+import type { Subscription } from "@/lib/types";
+import { getMonthlyCostConverted, formatCurrency } from "@/lib/calculations";
+import { getCategoryColor, getDefaultCurrency } from "@/lib/constants";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
 interface Props {
@@ -16,12 +16,13 @@ interface ChartData {
 }
 
 export function CategoryChart({ subscriptions }: Props) {
+  const defaultCurrency = getDefaultCurrency();
   const active = subscriptions.filter((s) => s.status === "active");
 
   const categoryMap = new Map<string, number>();
   for (const sub of active) {
     const cat = sub.category ?? "其他";
-    const cost = getMonthlyCost(sub);
+    const cost = getMonthlyCostConverted(sub, defaultCurrency);
     categoryMap.set(cat, (categoryMap.get(cat) ?? 0) + cost);
   }
 
@@ -29,7 +30,7 @@ export function CategoryChart({ subscriptions }: Props) {
     .map(([name, value]) => ({
       name,
       value: Math.round(value * 100) / 100,
-      color: CATEGORY_COLORS[name as Category] ?? "#6B7280",
+      color: getCategoryColor(name),
     }))
     .sort((a, b) => b.value - a.value);
 
@@ -71,7 +72,7 @@ export function CategoryChart({ subscriptions }: Props) {
                 ))}
               </Pie>
               <Tooltip
-                formatter={(value) => formatCurrency(Number(value))}
+                formatter={(value) => formatCurrency(Number(value), defaultCurrency)}
                 contentStyle={{
                   borderRadius: "10px",
                   border: "1px solid rgba(0,0,0,0.06)",
@@ -94,7 +95,7 @@ export function CategoryChart({ subscriptions }: Props) {
                 <span>{item.name}</span>
               </div>
               <span className="font-mono text-xs text-muted-foreground">
-                {formatCurrency(item.value)}/月
+                {formatCurrency(item.value, defaultCurrency)}/月
               </span>
             </div>
           ))}

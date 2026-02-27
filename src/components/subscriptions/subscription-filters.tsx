@@ -1,7 +1,7 @@
 "use client";
 
-import { CATEGORIES, BILLING_CYCLE_LABELS, STATUS_LABELS } from "@/lib/constants";
-import type { Category, SubscriptionStatus } from "@/lib/types";
+import { getCategoryNames, STATUS_LABELS } from "@/lib/constants";
+import type { SubscriptionStatus } from "@/lib/types";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -19,8 +19,8 @@ export type ViewMode = "grid" | "list";
 interface Props {
   search: string;
   onSearchChange: (v: string) => void;
-  categoryFilter: Category | "all";
-  onCategoryFilterChange: (v: Category | "all") => void;
+  categoryFilter: string | "all";
+  onCategoryFilterChange: (v: string | "all") => void;
   statusFilter: SubscriptionStatus | "all";
   onStatusFilterChange: (v: SubscriptionStatus | "all") => void;
   typeFilter: "recurring" | "lifetime" | "all";
@@ -68,13 +68,13 @@ export function SubscriptionFilters({
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Select value={categoryFilter} onValueChange={(v) => onCategoryFilterChange(v as Category | "all")}>
+          <Select value={categoryFilter} onValueChange={(v) => onCategoryFilterChange(v)}>
             <SelectTrigger className="w-28">
               <SelectValue placeholder="分类" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">全部分类</SelectItem>
-              {CATEGORIES.map((cat) => (
+              {getCategoryNames().map((cat) => (
                 <SelectItem key={cat} value={cat}>{cat}</SelectItem>
               ))}
             </SelectContent>

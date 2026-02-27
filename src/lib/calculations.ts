@@ -1,4 +1,5 @@
 import type { Subscription } from "./types";
+import { convertCurrency, DEFAULT_CURRENCY } from "./constants";
 
 export interface MonthlyTrendPoint {
   month: string; // "2025-07"
@@ -8,7 +9,8 @@ export interface MonthlyTrendPoint {
 
 export function getMonthlyTrendData(
   subscriptions: Subscription[],
-  months = 12
+  months = 12,
+  targetCurrency = DEFAULT_CURRENCY
 ): MonthlyTrendPoint[] {
   const now = new Date();
   const points: MonthlyTrendPoint[] = [];
@@ -25,7 +27,11 @@ export function getMonthlyTrendData(
       if (sub.type === "recurring") {
         const started = sub.started_at ? new Date(sub.started_at) : new Date(sub.created_at);
         if (started <= new Date(d.getFullYear(), d.getMonth() + 1, 0)) {
-          total += getMonthlyCost(sub);
+          total += convertCurrency(
+            getMonthlyCost(sub),
+            sub.currency || DEFAULT_CURRENCY,
+            targetCurrency
+          );
         }
       } else {
         if (!sub.purchase_date || !sub.expected_lifespan_months) continue;
@@ -35,7 +41,11 @@ export function getMonthlyTrendData(
         const monthStart = d;
         const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0);
         if (purchaseDate <= monthEnd && endDate >= monthStart) {
-          total += getMonthlyCost(sub);
+          total += convertCurrency(
+            getMonthlyCost(sub),
+            sub.currency || DEFAULT_CURRENCY,
+            targetCurrency
+          );
         }
       }
     }
@@ -53,7 +63,6 @@ export function getBillingCalendarData(subscriptions: Subscription[]): {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const dayMap = new Map<number, Subscription[]>();
 
@@ -109,9 +118,14 @@ export function formatCurrency(amount: number, currency = "CNY"): string {
   return new Intl.NumberFormat("zh-CN", {
     style: "currency",
     currency,
-    minimumFractionDigits: 2,
+    minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   }).format(amount);
+}
+
+export function getMonthlyCostConverted(sub: Subscription, targetCurrency: string): number {
+  const rawCost = getMonthlyCost(sub);
+  return convertCurrency(rawCost, sub.currency || "CNY", targetCurrency);
 }
 
 export function getDaysUntilBilling(sub: Subscription): number | null {

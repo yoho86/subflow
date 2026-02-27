@@ -11,16 +11,7 @@ export type BillingCycle =
 
 export type SubscriptionStatus = "active" | "paused" | "cancelled";
 
-export type Category =
-  | "工具"
-  | "娱乐"
-  | "生活"
-  | "硬件"
-  | "教育"
-  | "云服务"
-  | "健康"
-  | "金融"
-  | "其他";
+export type Category = string;
 
 export interface Subscription {
   id: string;

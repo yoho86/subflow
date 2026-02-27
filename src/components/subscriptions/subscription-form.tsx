@@ -11,8 +11,9 @@ import type {
   Category,
   SubscriptionStatus,
 } from "@/lib/types";
-import { CATEGORIES, BILLING_CYCLE_LABELS, DEFAULT_CURRENCY } from "@/lib/constants";
+import { getCategoryNames, BILLING_CYCLE_LABELS, DEFAULT_CURRENCY } from "@/lib/constants";
 import { getMonthlyCost, formatCurrency } from "@/lib/calculations";
+import { getDefaultCurrency, convertCurrency } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -126,7 +127,7 @@ export function SubscriptionForm({ open, onOpenChange, subscription, onSubmit }:
                 <SelectValue placeholder="选择分类" />
               </SelectTrigger>
               <SelectContent>
-                {CATEGORIES.map((cat) => (
+                {getCategoryNames().map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {cat}
                   </SelectItem>
@@ -147,6 +148,22 @@ export function SubscriptionForm({ open, onOpenChange, subscription, onSubmit }:
               <SelectContent>
                 <SelectItem value="recurring">周期订阅</SelectItem>
                 <SelectItem value="lifetime">买断制</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>货币</Label>
+            <Select
+              value={form.currency}
+              onValueChange={(v) => update("currency", v)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="CNY">人民币 (¥)</SelectItem>
+                <SelectItem value="USD">美元 ($)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -306,7 +323,7 @@ export function SubscriptionForm({ open, onOpenChange, subscription, onSubmit }:
             />
           </div>
 
-          <CostPreview type={form.type} previewMonthly={previewMonthly} purchasePrice={form.purchase_price} lifespanMonths={form.expected_lifespan_months} />
+          <CostPreview type={form.type} previewMonthly={previewMonthly} purchasePrice={form.purchase_price} lifespanMonths={form.expected_lifespan_months} currency={form.currency} />
 
           <Button type="submit" className="w-full" disabled={saving}>
             {saving ? "保存中..." : subscription ? "保存修改" : "添加订阅"}
@@ -322,13 +339,24 @@ function CostPreview({
   previewMonthly,
   purchasePrice,
   lifespanMonths,
+  currency,
 }: {
   type: string;
   previewMonthly: number;
   purchasePrice: number | null;
   lifespanMonths: number | null;
+  currency: string;
 }) {
-  const currencyFmt = useCallback((v: number) => formatCurrency(v), []);
+  const defaultCurrency = getDefaultCurrency();
+  const needsConversion = currency !== defaultCurrency;
+  const convertedMonthly = needsConversion
+    ? convertCurrency(previewMonthly, currency, defaultCurrency)
+    : previewMonthly;
+
+  const currencyFmt = useCallback(
+    (v: number) => formatCurrency(v, defaultCurrency),
+    [defaultCurrency]
+  );
   const showBreakdown = type === "lifetime" && purchasePrice && lifespanMonths;
 
   return (
@@ -350,18 +378,23 @@ function CostPreview({
             className="mb-1"
           >
             <p className="text-xs text-muted-foreground">
-              {formatCurrency(purchasePrice)} &divide; {lifespanMonths}个月
+              {formatCurrency(purchasePrice, currency)} &divide; {lifespanMonths}个月
             </p>
           </motion.div>
         ) : null}
       </AnimatePresence>
 
       <p className="font-mono text-xl font-semibold tracking-tighter">
-        <AnimatedNumber value={previewMonthly} formatter={currencyFmt} />
+        <AnimatedNumber value={convertedMonthly} formatter={currencyFmt} />
         <span className="text-xs font-normal text-muted-foreground ml-1">
           /月
         </span>
       </p>
+      {needsConversion && (
+        <p className="text-[10px] text-muted-foreground mt-1">
+          原始: {formatCurrency(previewMonthly, currency)}/月
+        </p>
+      )}
     </motion.div>
   );
 }
