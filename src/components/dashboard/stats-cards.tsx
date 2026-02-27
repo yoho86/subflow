@@ -2,7 +2,7 @@
 
 import { useCallback } from "react";
 import type { Subscription } from "@/lib/types";
-import { getMonthlyCostConverted, formatCurrency, getDaysUntilBilling } from "@/lib/calculations";
+import { formatCurrency, getDaysUntilBilling } from "@/lib/calculations";
 import { getDefaultCurrency } from "@/lib/constants";
 import { AnimatedNumber } from "@/components/motion/animated-number";
 import { StaggerContainer, StaggerItem } from "@/components/motion/stagger-children";
@@ -10,14 +10,14 @@ import { DollarSign, TrendingUp, Layers, CalendarClock } from "lucide-react";
 
 interface Props {
   subscriptions: Subscription[];
+  overallMonthly: number;
+  overallYearly: number;
 }
 
-export function StatsCards({ subscriptions }: Props) {
+export function StatsCards({ subscriptions, overallMonthly, overallYearly }: Props) {
   const defaultCurrency = getDefaultCurrency();
   const active = subscriptions.filter((s) => s.status === "active");
 
-  const monthlyTotal = active.reduce((sum, s) => sum + getMonthlyCostConverted(s, defaultCurrency), 0);
-  const yearlyTotal = monthlyTotal * 12;
   const activeCount = active.length;
   const upcomingCount = active.filter((s) => {
     const days = getDaysUntilBilling(s);
@@ -28,8 +28,8 @@ export function StatsCards({ subscriptions }: Props) {
   const intFormatter = useCallback((v: number) => String(Math.round(v)), []);
 
   const stats = [
-    { label: "月度支出", numValue: monthlyTotal, formatter: currencyFormatter, icon: DollarSign },
-    { label: "年度支出", numValue: yearlyTotal, formatter: currencyFormatter, icon: TrendingUp },
+    { label: "月度支出(含城市)", numValue: overallMonthly, formatter: currencyFormatter, icon: DollarSign },
+    { label: "年度支出(含城市)", numValue: overallYearly, formatter: currencyFormatter, icon: TrendingUp },
     { label: "活跃订阅", numValue: activeCount, formatter: intFormatter, icon: Layers },
     { label: "本月续费", numValue: upcomingCount, formatter: intFormatter, icon: CalendarClock },
   ];

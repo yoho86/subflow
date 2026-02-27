@@ -1,4 +1,8 @@
-import type { BillingCycle } from "./types";
+import type {
+  BillingCycle,
+  CityCostCategory,
+  CitySubscriptionStatus,
+} from "./types";
 
 export interface CategoryItem {
   name: string;
@@ -18,6 +22,7 @@ export const DEFAULT_CATEGORIES: CategoryItem[] = [
 ];
 
 const STORAGE_KEY_CATEGORIES = "subflow_categories";
+const STORAGE_KEY_DECIMAL_PLACES = "subflow_decimal_places";
 
 export function getCategories(): CategoryItem[] {
   if (typeof window === "undefined") return DEFAULT_CATEGORIES;
@@ -63,7 +68,27 @@ export const STATUS_LABELS = {
   cancelled: "已取消",
 } as const;
 
+export const CITY_STATUS_LABELS: Record<CitySubscriptionStatus, string> = {
+  active: "生效中",
+  paused: "已暂停",
+  archived: "已归档",
+};
+
+export const CITY_COST_CATEGORY_LABELS: Record<CityCostCategory, string> = {
+  housing: "住房",
+  water: "水费",
+  electricity: "电费",
+  gas: "燃气",
+  internet: "网络",
+  property: "物业",
+  transport: "交通",
+  food: "餐饮",
+  other: "其他",
+};
+
 export const DEFAULT_CURRENCY = "CNY";
+export type CurrencyFractionDigits = 0 | 1 | 2;
+export const DEFAULT_CURRENCY_FRACTION_DIGITS: CurrencyFractionDigits = 0;
 
 export const EXCHANGE_RATES: Record<string, Record<string, number>> = {
   CNY: { CNY: 1, USD: 0.137, EUR: 0.126, JPY: 20.5, GBP: 0.109, HKD: 1.07 },
@@ -87,4 +112,17 @@ export function convertCurrency(amount: number, from: string, to: string): numbe
 export function getDefaultCurrency(): string {
   if (typeof window === "undefined") return DEFAULT_CURRENCY;
   return localStorage.getItem("subflow_currency") || DEFAULT_CURRENCY;
+}
+
+export function getCurrencyFractionDigits(): CurrencyFractionDigits {
+  if (typeof window === "undefined") return DEFAULT_CURRENCY_FRACTION_DIGITS;
+  const raw = localStorage.getItem(STORAGE_KEY_DECIMAL_PLACES);
+  if (!raw) return DEFAULT_CURRENCY_FRACTION_DIGITS;
+  const parsed = Number(raw);
+  if (parsed === 0 || parsed === 1 || parsed === 2) return parsed;
+  return DEFAULT_CURRENCY_FRACTION_DIGITS;
+}
+
+export function setCurrencyFractionDigits(value: CurrencyFractionDigits) {
+  localStorage.setItem(STORAGE_KEY_DECIMAL_PLACES, String(value));
 }

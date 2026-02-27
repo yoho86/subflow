@@ -1,11 +1,26 @@
-import type { Subscription } from "./types";
-import { convertCurrency, DEFAULT_CURRENCY } from "./constants";
+import type { CityCostItem, Subscription } from "./types";
+import {
+  convertCurrency,
+  DEFAULT_CURRENCY,
+  getCurrencyFractionDigits,
+} from "./constants";
 
 export interface MonthlyTrendPoint {
   month: string; // "2025-07"
   label: string; // "7月"
   cost: number;
 }
+
+type CostLike = Pick<
+  Subscription | CityCostItem,
+  | "type"
+  | "amount"
+  | "billing_cycle"
+  | "custom_cycle_days"
+  | "purchase_price"
+  | "expected_lifespan_months"
+  | "currency"
+>;
 
 export function getMonthlyTrendData(
   subscriptions: Subscription[],
@@ -81,33 +96,37 @@ export function getBillingCalendarData(subscriptions: Subscription[]): {
     .sort((a, b) => a.day - b.day);
 }
 
-export function getMonthlyCost(sub: Subscription): number {
-  if (sub.type === "lifetime") {
-    if (!sub.purchase_price || !sub.expected_lifespan_months) return 0;
-    return sub.purchase_price / sub.expected_lifespan_months;
+export function getMonthlyCostFromCostLike(item: CostLike): number {
+  if (item.type === "lifetime") {
+    if (!item.purchase_price || !item.expected_lifespan_months) return 0;
+    return item.purchase_price / item.expected_lifespan_months;
   }
 
-  if (!sub.amount) return 0;
+  if (!item.amount) return 0;
 
-  switch (sub.billing_cycle) {
+  switch (item.billing_cycle) {
     case "weekly":
-      return sub.amount * (365.25 / 7 / 12);
+      return item.amount * (365.25 / 7 / 12);
     case "monthly":
-      return sub.amount;
+      return item.amount;
     case "quarterly":
-      return sub.amount / 3;
+      return item.amount / 3;
     case "semi_annually":
-      return sub.amount / 6;
+      return item.amount / 6;
     case "yearly":
-      return sub.amount / 12;
+      return item.amount / 12;
     case "biennially":
-      return sub.amount / 24;
+      return item.amount / 24;
     case "custom":
-      if (!sub.custom_cycle_days) return 0;
-      return sub.amount / (sub.custom_cycle_days / 30.44);
+      if (!item.custom_cycle_days) return 0;
+      return item.amount / (item.custom_cycle_days / 30.44);
     default:
       return 0;
   }
+}
+
+export function getMonthlyCost(sub: Subscription): number {
+  return getMonthlyCostFromCostLike(sub);
 }
 
 export function getYearlyCost(sub: Subscription): number {
@@ -115,17 +134,26 @@ export function getYearlyCost(sub: Subscription): number {
 }
 
 export function formatCurrency(amount: number, currency = "CNY"): string {
+  const fractionDigits = getCurrencyFractionDigits();
   return new Intl.NumberFormat("zh-CN", {
     style: "currency",
     currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
   }).format(amount);
 }
 
 export function getMonthlyCostConverted(sub: Subscription, targetCurrency: string): number {
-  const rawCost = getMonthlyCost(sub);
+  const rawCost = getMonthlyCostFromCostLike(sub);
   return convertCurrency(rawCost, sub.currency || "CNY", targetCurrency);
+}
+
+export function getCityCostItemMonthlyConverted(
+  item: CityCostItem,
+  targetCurrency: string
+): number {
+  const rawCost = getMonthlyCostFromCostLike(item);
+  return convertCurrency(rawCost, item.currency || "CNY", targetCurrency);
 }
 
 export function getDaysUntilBilling(sub: Subscription): number | null {

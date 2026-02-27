@@ -9,6 +9,10 @@ import {
   saveCategories,
   DEFAULT_CATEGORIES,
   type CategoryItem,
+  getCurrencyFractionDigits,
+  setCurrencyFractionDigits,
+  DEFAULT_CURRENCY_FRACTION_DIGITS,
+  type CurrencyFractionDigits,
 } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,6 +46,9 @@ export default function SettingsPage() {
   const [email, setEmail] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [currency, setCurrency] = useState("CNY");
+  const [decimalPlaces, setDecimalPlaces] = useState<CurrencyFractionDigits>(
+    DEFAULT_CURRENCY_FRACTION_DIGITS
+  );
   const [categories, setCategories] = useState<CategoryItem[]>([]);
   const [newCatName, setNewCatName] = useState("");
   const [newCatColor, setNewCatColor] = useState(PRESET_COLORS[0]);
@@ -52,6 +59,7 @@ export default function SettingsPage() {
   useEffect(() => {
     const saved = localStorage.getItem("subflow_currency");
     if (saved) setCurrency(saved);
+    setDecimalPlaces(getCurrencyFractionDigits());
 
     setCategories(getCategories());
 
@@ -65,6 +73,13 @@ export default function SettingsPage() {
   function handleCurrencyChange(value: string) {
     setCurrency(value);
     localStorage.setItem("subflow_currency", value);
+  }
+
+  function handleDecimalPlacesChange(value: string) {
+    const parsed = Number(value);
+    if (parsed !== 0 && parsed !== 1 && parsed !== 2) return;
+    setDecimalPlaces(parsed);
+    setCurrencyFractionDigits(parsed);
   }
 
   function handleAddCategory() {
@@ -202,6 +217,25 @@ export default function SettingsPage() {
                 </Select>
                 <p className="text-xs text-muted-foreground">
                   所有订阅的月度/年度成本将按此货币换算展示
+                </p>
+              </div>
+              <div className="space-y-1.5">
+                <Label>金额小数位</Label>
+                <Select
+                  value={String(decimalPlaces)}
+                  onValueChange={handleDecimalPlacesChange}
+                >
+                  <SelectTrigger className="w-48">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">不展示</SelectItem>
+                    <SelectItem value="1">1 位</SelectItem>
+                    <SelectItem value="2">2 位</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  全局金额展示位数，默认不展示小数
                 </p>
               </div>
             </CardContent>
