@@ -15,6 +15,17 @@ function getSupabase() {
   return createClient();
 }
 
+function normalizeCityCostError(error: { message: string; code?: string }) {
+  const message = error.message || "";
+  if (
+    error.code === "PGRST205" ||
+    message.includes("Could not find the table 'public.city_cost_items'")
+  ) {
+    return "城市成本项表未初始化，请在 Supabase 执行最新 schema.sql 后重试";
+  }
+  return message;
+}
+
 export function useCityCostItems(cityId?: string | null) {
   const [items, setItems] = useState<CityCostItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -46,7 +57,8 @@ export function useCityCostItems(cityId?: string | null) {
       : await query;
 
     if (fetchError) {
-      setError(fetchError.message);
+      setError(normalizeCityCostError(fetchError));
+      setItems([]);
     } else {
       setItems((data ?? []) as CityCostItem[]);
     }
@@ -76,7 +88,8 @@ export function useCityCostItems(cityId?: string | null) {
 
       if (cancelled) return;
       if (fetchError) {
-        setError(fetchError.message);
+        setError(normalizeCityCostError(fetchError));
+        setItems([]);
       } else {
         setItems((data ?? []) as CityCostItem[]);
       }
@@ -114,7 +127,7 @@ export function useCityCostItems(cityId?: string | null) {
       .select()
       .single();
 
-    if (insertError) throw insertError;
+    if (insertError) throw new Error(normalizeCityCostError(insertError));
     setItems((prev) => [...prev, data as CityCostItem]);
     return data as CityCostItem;
   }
@@ -139,7 +152,7 @@ export function useCityCostItems(cityId?: string | null) {
       .select()
       .single();
 
-    if (updateError) throw updateError;
+    if (updateError) throw new Error(normalizeCityCostError(updateError));
     setItems((prev) =>
       prev.map((item) => (item.id === id ? (data as CityCostItem) : item))
     );
@@ -157,7 +170,7 @@ export function useCityCostItems(cityId?: string | null) {
       .delete()
       .eq("id", id);
 
-    if (deleteError) throw deleteError;
+    if (deleteError) throw new Error(normalizeCityCostError(deleteError));
     setItems((prev) => prev.filter((item) => item.id !== id));
   }
 

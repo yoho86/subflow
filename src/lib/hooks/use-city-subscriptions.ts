@@ -15,6 +15,17 @@ function getSupabase() {
   return createClient();
 }
 
+function normalizeCityError(error: { message: string; code?: string }) {
+  const message = error.message || "";
+  if (
+    error.code === "PGRST205" ||
+    message.includes("Could not find the table 'public.city_subscriptions'")
+  ) {
+    return "城市模块数据库未初始化，请在 Supabase 执行最新 schema.sql 后重试";
+  }
+  return message;
+}
+
 export function useCitySubscriptions() {
   const [cities, setCities] = useState<CitySubscription[]>([]);
   const [loading, setLoading] = useState(true);
@@ -34,7 +45,8 @@ export function useCitySubscriptions() {
       .order("created_at", { ascending: false });
 
     if (fetchError) {
-      setError(fetchError.message);
+      setError(normalizeCityError(fetchError));
+      setCities([]);
     } else {
       setCities(data as CitySubscription[]);
     }
@@ -58,7 +70,8 @@ export function useCitySubscriptions() {
 
       if (cancelled) return;
       if (fetchError) {
-        setError(fetchError.message);
+        setError(normalizeCityError(fetchError));
+        setCities([]);
       } else {
         setCities(data as CitySubscription[]);
       }
@@ -96,7 +109,7 @@ export function useCitySubscriptions() {
       .select()
       .single();
 
-    if (insertError) throw insertError;
+    if (insertError) throw new Error(normalizeCityError(insertError));
     setCities((prev) => [data as CitySubscription, ...prev]);
     return data as CitySubscription;
   }
@@ -121,7 +134,7 @@ export function useCitySubscriptions() {
       .select()
       .single();
 
-    if (updateError) throw updateError;
+    if (updateError) throw new Error(normalizeCityError(updateError));
     setCities((prev) =>
       prev.map((city) => (city.id === id ? (data as CitySubscription) : city))
     );
@@ -139,7 +152,7 @@ export function useCitySubscriptions() {
       .delete()
       .eq("id", id);
 
-    if (deleteError) throw deleteError;
+    if (deleteError) throw new Error(normalizeCityError(deleteError));
     setCities((prev) => prev.filter((city) => city.id !== id));
   }
 
