@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "if [ \"$CF_PAGES\" = \"1\" ]; then npx @cloudflare/next-on-pages@1; else next build; fi",
+    "build:next": "next build",
+    "build:pages": "npx @cloudflare/next-on-pages@1",
     "start": "next start",
     "lint": "eslint"
   },
