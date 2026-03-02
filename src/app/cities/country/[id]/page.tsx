@@ -23,6 +23,11 @@ import type {
 import { formatCurrency, getCountryCostItemMonthlyConverted } from "@/lib/calculations";
 import { COUNTRY_STATUS_LABELS, getDefaultCurrency } from "@/lib/constants";
 
+// This is required for static export with dynamic routes
+export function generateStaticParams() {
+  return [];
+}
+
 function CountryDetailContent() {
   const params = useParams();
   const router = useRouter();
