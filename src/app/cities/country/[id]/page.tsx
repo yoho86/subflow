@@ -23,6 +23,8 @@ import type {
 import { formatCurrency, getCountryCostItemMonthlyConverted } from "@/lib/calculations";
 import { COUNTRY_STATUS_LABELS, getDefaultCurrency } from "@/lib/constants";
 
+export const runtime = "edge";
+
 export default function CountryDetailPage() {
   const params = useParams();
   const router = useRouter();
