@@ -2,11 +2,10 @@
 
 import { useEffect, useState } from "react";
 import type {
-  CitySubscription,
-  CitySubscriptionInsert,
-  CitySubscriptionStatus,
+  Country,
+  CountryInsert,
+  CountrySubscriptionStatus,
 } from "@/lib/types";
-import { useCountries } from "@/lib/hooks/use-countries";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,37 +22,35 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sh
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  city?: CitySubscription | null;
-  onSubmit: (data: CitySubscriptionInsert) => Promise<void>;
+  country?: Country | null;
+  onSubmit: (data: CountryInsert) => Promise<void>;
 }
 
-const emptyForm: CitySubscriptionInsert = {
+const emptyForm: CountryInsert = {
   name: "",
-  country: null,
-  region: null,
-  country_id: null,
+  country_code: null,
+  currency: "CNY",
   status: "active",
   notes: null,
 };
 
-export function CityForm({ open, onOpenChange, city, onSubmit }: Props) {
-  const [form, setForm] = useState<CitySubscriptionInsert>(emptyForm);
+export function CountryForm({ open, onOpenChange, country, onSubmit }: Props) {
+  const [form, setForm] = useState<CountryInsert>(emptyForm);
   const [saving, setSaving] = useState(false);
-  const { countries } = useCountries();
 
   useEffect(() => {
-    if (city) {
+    if (country) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { id, user_id, created_at, updated_at, ...rest } = city;
+      const { id, user_id, created_at, updated_at, ...rest } = country;
       setForm(rest);
     } else {
       setForm(emptyForm);
     }
-  }, [city, open]);
+  }, [country, open]);
 
-  function update<K extends keyof CitySubscriptionInsert>(
+  function update<K extends keyof CountryInsert>(
     key: K,
-    value: CitySubscriptionInsert[K]
+    value: CountryInsert[K]
   ) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -75,59 +72,49 @@ export function CityForm({ open, onOpenChange, city, onSubmit }: Props) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="overflow-y-auto">
         <SheetHeader>
-          <SheetTitle>{city ? "编辑城市订阅" : "添加城市订阅"}</SheetTitle>
+          <SheetTitle>{country ? "编辑国家订阅" : "添加国家订阅"}</SheetTitle>
         </SheetHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 mt-6 px-6">
           <div className="space-y-1.5">
-            <Label>城市名称</Label>
+            <Label>国家名称</Label>
             <Input
               value={form.name}
               onChange={(e) => update("name", e.target.value)}
-              placeholder="上海 / 东京 / 新加坡..."
+              placeholder="中国 / 日本 / 美国..."
               required
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
-              <Label>国家</Label>
+              <Label>国家代码</Label>
               <Input
-                value={form.country ?? ""}
-                onChange={(e) => update("country", e.target.value || null)}
-                placeholder="中国"
+                value={form.country_code ?? ""}
+                onChange={(e) => update("country_code", e.target.value || null)}
+                placeholder="CN / JP / US"
+                maxLength={2}
               />
             </div>
             <div className="space-y-1.5">
-              <Label>区域</Label>
-              <Input
-                value={form.region ?? ""}
-                onChange={(e) => update("region", e.target.value || null)}
-                placeholder="华东"
-              />
+              <Label>货币</Label>
+              <Select
+                value={form.currency}
+                onValueChange={(value) => update("currency", value)}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="CNY">CNY (人民币)</SelectItem>
+                  <SelectItem value="USD">USD (美元)</SelectItem>
+                  <SelectItem value="EUR">EUR (欧元)</SelectItem>
+                  <SelectItem value="JPY">JPY (日元)</SelectItem>
+                  <SelectItem value="GBP">GBP (英镑)</SelectItem>
+                  <SelectItem value="HKD">HKD (港币)</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>所属国家（可选）</Label>
-            <Select
-              value={form.country_id ?? "none"}
-              onValueChange={(value) =>
-                update("country_id", value === "none" ? null : value)
-              }
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="选择所属国家" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">无关联国家</SelectItem>
-                {countries.map((country) => (
-                  <SelectItem key={country.id} value={country.id}>
-                    {country.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="space-y-1.5">
@@ -135,7 +122,7 @@ export function CityForm({ open, onOpenChange, city, onSubmit }: Props) {
             <Select
               value={form.status}
               onValueChange={(value) =>
-                update("status", value as CitySubscriptionStatus)
+                update("status", value as CountrySubscriptionStatus)
               }
             >
               <SelectTrigger>
@@ -160,7 +147,7 @@ export function CityForm({ open, onOpenChange, city, onSubmit }: Props) {
           </div>
 
           <Button type="submit" className="w-full" disabled={saving}>
-            {saving ? "保存中..." : city ? "保存修改" : "创建城市"}
+            {saving ? "保存中..." : country ? "保存修改" : "创建国家"}
           </Button>
         </form>
       </SheetContent>

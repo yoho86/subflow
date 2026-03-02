@@ -1,4 +1,4 @@
-import type { CityCostItem, Subscription } from "./types";
+import type { CityCostItem, CountryCostItem, Subscription } from "./types";
 import {
   convertCurrency,
   DEFAULT_CURRENCY,
@@ -150,6 +150,14 @@ export function getMonthlyCostConverted(sub: Subscription, targetCurrency: strin
 
 export function getCityCostItemMonthlyConverted(
   item: CityCostItem,
+  targetCurrency: string
+): number {
+  const rawCost = getMonthlyCostFromCostLike(item);
+  return convertCurrency(rawCost, item.currency || "CNY", targetCurrency);
+}
+
+export function getCountryCostItemMonthlyConverted(
+  item: CountryCostItem,
   targetCurrency: string
 ): number {
   const rawCost = getMonthlyCostFromCostLike(item);

@@ -14,6 +14,7 @@ import { CityCostItemForm } from "@/components/cities/city-cost-item-form";
 import { CityCostItemList } from "@/components/cities/city-cost-item-list";
 import { useCitySubscriptions } from "@/lib/hooks/use-city-subscriptions";
 import { useCityCostItems } from "@/lib/hooks/use-city-cost-items";
+import { useCountries } from "@/lib/hooks/use-countries";
 import type {
   CityCostItem,
   CityCostItemInsert,
@@ -42,6 +43,7 @@ function CityDetailContent() {
     updateCityCostItem,
     deleteCityCostItem,
   } = useCityCostItems(cityId);
+  const { countries } = useCountries();
 
   const [cityFormOpen, setCityFormOpen] = useState(false);
   const [itemFormOpen, setItemFormOpen] = useState(false);
@@ -50,6 +52,11 @@ function CityDetailContent() {
   const city = useMemo(
     () => cities.find((item) => item.id === cityId) ?? null,
     [cities, cityId]
+  );
+
+  const linkedCountry = useMemo(
+    () => city?.country_id ? countries.find((c) => c.id === city.country_id) : null,
+    [city, countries]
   );
 
   const defaultCurrency = getDefaultCurrency();
@@ -149,9 +156,18 @@ function CityDetailContent() {
                     >
                       {CITY_STATUS_LABELS[city.status]}
                     </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      {[city.country, city.region].filter(Boolean).join(" · ") || "未设置地区"}
-                    </span>
+                    {linkedCountry && (
+                      <Link href={`/cities/country/${linkedCountry.id}`}>
+                        <Badge variant="outline" className="text-xs cursor-pointer hover:bg-secondary/80">
+                          {linkedCountry.name}
+                        </Badge>
+                      </Link>
+                    )}
+                    {!linkedCountry && (city.country || city.region) && (
+                      <span className="text-xs text-muted-foreground">
+                        {[city.country, city.region].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">

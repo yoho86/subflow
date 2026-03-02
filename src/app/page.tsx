@@ -3,6 +3,8 @@
 import { useSubscriptions } from "@/lib/hooks/use-subscriptions";
 import { useCitySubscriptions } from "@/lib/hooks/use-city-subscriptions";
 import { useCityCostItems } from "@/lib/hooks/use-city-cost-items";
+import { useCountries } from "@/lib/hooks/use-countries";
+import { useCountryCostItems } from "@/lib/hooks/use-country-cost-items";
 import { Navbar } from "@/components/layout/navbar";
 import { PageTransition } from "@/components/motion/page-transition";
 import { StatsCards } from "@/components/dashboard/stats-cards";
@@ -13,6 +15,7 @@ import { UpcomingList } from "@/components/dashboard/upcoming-list";
 import { CityCostSummary } from "@/components/dashboard/city-cost-summary";
 import {
   getCityCostItemMonthlyConverted,
+  getCountryCostItemMonthlyConverted,
   getMonthlyCostConverted,
 } from "@/lib/calculations";
 import { getDefaultCurrency } from "@/lib/constants";
@@ -23,12 +26,15 @@ export default function DashboardPage() {
   const { cities, loading: citiesLoading, error: citiesError } = useCitySubscriptions();
   const { allItems: cityItems, loading: cityItemsLoading, error: cityItemsError } =
     useCityCostItems();
+  const { countries, loading: countriesLoading, error: countriesError } = useCountries();
+  const { allItems: countryItems, loading: countryItemsLoading, error: countryItemsError } =
+    useCountryCostItems();
 
   const loading = subscriptionsLoading;
   const error = subscriptionsError;
-  const cityLoading = citiesLoading || cityItemsLoading;
-  const cityError = citiesError || cityItemsError;
-  const cityDataAvailable = !cityLoading && !cityError;
+  const geoLoading = citiesLoading || cityItemsLoading || countriesLoading || countryItemsLoading;
+  const geoError = citiesError || cityItemsError || countriesError || countryItemsError;
+  const geoDataAvailable = !geoLoading && !geoError;
   const defaultCurrency = getDefaultCurrency();
 
   const regularMonthly = subscriptions
@@ -38,12 +44,29 @@ export default function DashboardPage() {
       0
     );
 
-  const effectiveCities = cityDataAvailable ? cities : [];
-  const effectiveCityItems = cityDataAvailable ? cityItems : [];
+  const effectiveCountries = geoDataAvailable ? countries : [];
+  const effectiveCountryItems = geoDataAvailable ? countryItems : [];
+  const effectiveCities = geoDataAvailable ? cities : [];
+  const effectiveCityItems = geoDataAvailable ? cityItems : [];
 
+  const activeCountries = effectiveCountries.filter((country) => country.status === "active");
   const activeCities = effectiveCities.filter((city) => city.status === "active");
+  const activeCountryIds = new Set(activeCountries.map((country) => country.id));
   const activeCityIds = new Set(activeCities.map((city) => city.id));
 
+  // Calculate country totals
+  const countryTotalsByCountryId: Record<string, number> = {};
+  for (const country of activeCountries) {
+    countryTotalsByCountryId[country.id] = 0;
+  }
+  for (const item of effectiveCountryItems) {
+    if (item.status !== "active" || !activeCountryIds.has(item.country_id)) continue;
+    countryTotalsByCountryId[item.country_id] =
+      (countryTotalsByCountryId[item.country_id] ?? 0) +
+      getCountryCostItemMonthlyConverted(item, defaultCurrency);
+  }
+
+  // Calculate city totals
   const cityTotalsByCityId: Record<string, number> = {};
   for (const city of activeCities) {
     cityTotalsByCityId[city.id] = 0;
@@ -55,8 +78,10 @@ export default function DashboardPage() {
       getCityCostItemMonthlyConverted(item, defaultCurrency);
   }
 
+  const countryMonthly = Object.values(countryTotalsByCountryId).reduce((sum, value) => sum + value, 0);
   const cityMonthly = Object.values(cityTotalsByCityId).reduce((sum, value) => sum + value, 0);
-  const overallMonthly = regularMonthly + (cityDataAvailable ? cityMonthly : 0);
+  const geographicMonthly = countryMonthly + cityMonthly;
+  const overallMonthly = regularMonthly + (geoDataAvailable ? geographicMonthly : 0);
   const overallYearly = overallMonthly * 12;
 
   return (
@@ -86,22 +111,25 @@ export default function DashboardPage() {
               overallMonthly={overallMonthly}
               overallYearly={overallYearly}
             />
-            {cityLoading ? (
+            {geoLoading ? (
               <div className="rounded-2xl border bg-card p-5 text-sm text-muted-foreground">
-                城市成本加载中...
+                地理成本加载中...
               </div>
-            ) : cityError ? (
+            ) : geoError ? (
               <div className="rounded-2xl border border-amber-300/60 bg-amber-50/60 p-5">
                 <p className="text-sm text-amber-800">
-                  城市模块暂不可用，已降级为仅统计常规订阅。请确认线上已执行最新数据库 schema。
+                  地理模块暂不可用，已降级为仅统计常规订阅。请确认线上已执行最新数据库 schema。
                 </p>
-                <p className="text-xs text-amber-700 mt-1 break-all">{cityError}</p>
+                <p className="text-xs text-amber-700 mt-1 break-all">{geoError}</p>
               </div>
             ) : (
               <CityCostSummary
+                countries={effectiveCountries}
                 cities={effectiveCities}
+                countryMonthlyTotal={countryMonthly}
                 cityMonthlyTotal={cityMonthly}
                 overallMonthlyTotal={overallMonthly}
+                countryTotalsByCountryId={countryTotalsByCountryId}
                 cityTotalsByCityId={cityTotalsByCityId}
                 defaultCurrency={defaultCurrency}
               />

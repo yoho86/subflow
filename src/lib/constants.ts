@@ -2,6 +2,8 @@ import type {
   BillingCycle,
   CityCostCategory,
   CitySubscriptionStatus,
+  CountryCostCategory,
+  CountrySubscriptionStatus,
 } from "./types";
 
 export interface CategoryItem {
@@ -83,6 +85,25 @@ export const CITY_COST_CATEGORY_LABELS: Record<CityCostCategory, string> = {
   property: "物业",
   transport: "交通",
   food: "餐饮",
+  other: "其他",
+};
+
+export const COUNTRY_STATUS_LABELS: Record<CountrySubscriptionStatus, string> = {
+  active: "生效中",
+  paused: "已暂停",
+  archived: "已归档",
+};
+
+export const COUNTRY_COST_CATEGORY_LABELS: Record<CountryCostCategory, string> = {
+  social_security: "社保",
+  housing_fund: "公积金",
+  income_tax: "个税",
+  pension: "养老保险",
+  medical_insurance: "医疗保险",
+  unemployment: "失业保险",
+  work_injury: "工伤保险",
+  maternity: "生育保险",
+  visa: "签证费用",
   other: "其他",
 };
 
