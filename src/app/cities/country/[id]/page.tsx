@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Plus, Trash2, Globe } from "lucide-react";
 import { Navbar } from "@/components/layout/navbar";
@@ -23,12 +23,7 @@ import type {
 import { formatCurrency, getCountryCostItemMonthlyConverted } from "@/lib/calculations";
 import { COUNTRY_STATUS_LABELS, getDefaultCurrency } from "@/lib/constants";
 
-// This is required for static export with dynamic routes
-export function generateStaticParams() {
-  return [];
-}
-
-function CountryDetailContent() {
+export default function CountryDetailPage() {
   const params = useParams();
   const router = useRouter();
   const countryId = params.id as string;
@@ -265,22 +260,5 @@ function CountryDetailContent() {
         />
       )}
     </div>
-  );
-}
-
-export default function CountryDetailPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen bg-background">
-          <Navbar />
-          <main className="px-6 lg:px-10 py-6">
-            <div className="text-center py-20 text-muted-foreground">加载中...</div>
-          </main>
-        </div>
-      }
-    >
-      <CountryDetailContent />
-    </Suspense>
   );
 }
